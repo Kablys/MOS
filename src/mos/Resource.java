@@ -1,18 +1,21 @@
 package mos;
 
-/**
- * Created by domas on 17.5.2.
- */
-public class Resource {
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Resource<Type> {
     //descriptor
     int ID;         //ID - išorinis vardas
+    String name;
     Process parent; //Tėvas (procesas)
     Boolean message;//Pakartotinio panaudojamumo flag’as (pvz. žinutės = false = vienkartinis)
-    //TODO Think how to implent elements
-        // maybe it should be method that needs to be implemented
-    //Elementų sąrašas. Skaidomi resursai padalinti į elementus, kurie gali būti užimti ar laisvi.
+    List<Type> element = new ArrayList<>();//Elementų sąrašas. Skaidomi resursai padalinti į elementus, kurie gali būti užimti ar laisvi.
     //Šio resurso elementų sąrašas kurių laukia individualūs procesai
-        //Map<Process, List<ResourceElement>>
+    public Resource(String name) {
+        this.name = name;
+    }
+    //Map<Process, List<ResourceElement>>
     //FIXME do we really need this
     //Resurso paskirstytojas
 
