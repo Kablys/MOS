@@ -61,7 +61,7 @@ class ReadInputProgram implements Program {
 
     @Override
     public void run(Process proc) throws InterruptedException {
-        proc.getRes("input packet");
+        //TODO proc.getRes("input packet");
         proc.getRes("Neegzistuojantis");
     }
 }

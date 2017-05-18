@@ -33,13 +33,12 @@ public class Process implements Runnable {
     //Procesoriaus būsena
         //Režimas (SUPER/USER)
         //Registrų reikšmės (TMP, IC, C)
-    // FIXME Shouldn't be recursive list
         //maybe ID's
     //List<Process> children;     //Vaikų (procesų) sąrašas
-    List<Resource> createdRes;  //Sukurtų resursų sąrašas
-    List<Resource> receivedRes; //Pasiekiamų (gautų) resursų sąrašas
+    //List<Resource> createdRes;  //Sukurtų resursų sąrašas
+    //List<Resource> receivedRes; //Pasiekiamų (gautų) resursų sąrašas
 
-    Integer priority;//Prioritetas
+    private Integer priority;//Prioritetas
     public Integer getPriority() {
         return priority;
     }
@@ -105,30 +104,30 @@ public class Process implements Runnable {
     }
     public Resource getRes(String resName) throws InterruptedException {
         this.state = ProcState.BLOCKED;
-        if (resName.equals("Neegzistuojantis")) {
-            synchronized (Kernel.CPU) {Kernel.CPU.notify();}
-            System.out.println(this.name + " laukia \"Neegzistuojantis\" resurso");
-            synchronized (this) {wait();}
-            System.out.println("you should not be here");
-            assert true;
-        }
-        Resource res = new Resource(resName);
-        Kernel.resources.add(res);
-        synchronized (res){
-            System.out.println(this.name + " is waiting for " + resName);
-            synchronized (Kernel.CPU) {Kernel.CPU.notify();}
-            res.wait();
-            this.state = ProcState.READY;
-        }
+        System.out.println(this.name + " requested resource: " + resName);
+//        if (resName.equals("Neegzistuojantis")) {
+//            synchronized (Kernel.CPU) {Kernel.CPU.notify();}
+//            System.out.println(this.name + " laukia \"Neegzistuojantis\" resurso");
+//            synchronized (this) {wait();}
+//            System.out.println("you should not be here");
+//            assert true;
+//        }
+//        Resource res = new Resource(resName, this);
+//        Kernel.resources.add(res);
+//        synchronized (res){
+//            System.out.println(this.name + " is waiting for " + resName);
+//            synchronized (Kernel.CPU) {Kernel.CPU.notify();}
+//            res.wait();
+//        }
+        Resource res = Kernel.requestRes(this, resName);
+        System.out.println(this.name + " got resource: " + resName);
+        this.state = ProcState.READY;
+        synchronized (this) {this.wait();}
         return res;
     }
     public void makeRes(String resName){
-        Resource res = Kernel.getResByName(resName);
-        synchronized (res){
-            // TODO add info to res for initialization
-            res.notify();
-            System.out.println("notify about " + resName);
-        }
+        Kernel.createRes(this, resName);
+        System.out.println(this.name + " created resource: " + resName);
     }
     //Stabdyti procesą
         //Proceso būsena keičiama iš blokuotas į blokuotas-sustabdytas arba iš pasiruošęs į pasiruošęs-sustabdytas.

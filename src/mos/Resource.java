@@ -8,12 +8,14 @@ public class Resource<Type> {
     //descriptor
     int ID;         //ID - išorinis vardas
     String name;
-    Process parent; //Tėvas (procesas)
+    Process creator; //Tėvas (procesas)
+    Process requester; //Tėvas (procesas)
     Boolean message;//Pakartotinio panaudojamumo flag’as (pvz. žinutės = false = vienkartinis)
     List<Type> element = new ArrayList<>();//Elementų sąrašas. Skaidomi resursai padalinti į elementus, kurie gali būti užimti ar laisvi.
-    //Šio resurso elementų sąrašas kurių laukia individualūs procesai
-    public Resource(String name) {
+    public Resource(String name, Process creator, Process requester) {
         this.name = name;
+        this.creator = creator;
+        this.requester = requester;
     }
     //Map<Process, List<ResourceElement>>
     //FIXME do we really need this

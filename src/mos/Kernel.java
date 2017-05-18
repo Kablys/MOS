@@ -1,5 +1,7 @@
 package mos;
 
+import com.sun.org.apache.regexp.internal.RE;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -14,17 +16,7 @@ public class Kernel {
     static List<Process>  processes = new ArrayList<>();
     static List<Resource> resources = new ArrayList<>();
 
-    // Scheduler(processes.filter(state = Ready).orderBy(priority).head)
-        //Exception if returns null
     void Scheduler () throws InterruptedException, IndexOutOfBoundsException {
-
-        //bootup starts root process
-        Process root = new Process("Root", null, 10, new RootProgram());
-        Kernel.processes.add(root);
-        Thread t1 = new Thread(root, "Root");
-        t1.start();
-
-
         //After root process is started we can start scheduler
         for (Integer i = 0;;i++){
             synchronized (CPU){
@@ -35,19 +27,14 @@ public class Kernel {
                         .filter(p -> p.state == ProcState.READY)
                         .sorted(Comparator.comparing(Process::getPriority))
                         .collect(Collectors.toList())
-                        .get(0);// put in try block
+                        .get(0);// FIXME when there is no more proc to run throws execption that Main class catches
                 sleep(100); // incase of bug prevents uncontrollable loop
-                System.out.println(procToRun.name + i.toString());
+                System.out.println(i.toString() + " Scheduler selected: " + procToRun.name);
                 synchronized (procToRun) {procToRun.notify();}
                 CPU.wait();
             }
         }
         System.out.println("scheduler loop over");
-
-        //"Shutdown" ends root proc
-        root.terminate();
-        t1.join();
-
     }
 
     public static List<Process> getChildren (Process proc){
@@ -56,18 +43,73 @@ public class Kernel {
                 .collect(Collectors.toList());
     }
 
-    public static Resource getResByName (String name){
+//    public static Resource getResByName (String name){
+//        List<Resource> ress = resources.stream()
+//                .filter(p -> p.name.equals(name))
+//                .collect(Collectors.toList());
+//        if (ress.size() > 1) {
+//            System.out.println("Found more then one res named: " + name);
+//        } else if (ress.size() == 0){ //
+//            System.out.println("There is no resource named: " + name);
+//            System.exit(1);
+//        }
+//        return ress.get(0);
+//    }
+
+
+    // Manager methods responsible for managing resources.
+    public static void createRes (Process creator, String name){
         List<Resource> ress = resources.stream()
-                .filter(p -> p.name.equals(name))
+                .filter(r -> r.creator == null) // get only requested resources
+                .filter(r -> r.name.equals(name))
                 .collect(Collectors.toList());
-        if (ress.size() > 1) {
-            System.out.println("Found more then one res named: " + name);
-        } else if (ress.size() == 0){ //
-            System.out.println("There is no resource named: " + name);
-            System.exit(1);
+        if (ress.isEmpty()){
+            // if no process need this resource add to list
+            resources.add(new Resource(name, creator, null));
+        } else {
+            // if there is process that needs this resource send it
+            if (ress.size() > 1){
+                // TODO maybe try use priority
+                System.out.println("more than 1 resource with same name, what to do?");
+                System.out.println(creator + name + ress.toString());
+            }
+            Resource res = ress.get(0);
+            res.creator = creator;
+            // TODO add element info
+            synchronized (res) {res.notify();}
         }
-        return ress.get(0);
 
     }
-    // Manager(resources
+
+    public static Resource requestRes (Process requester, String name){
+        List<Resource> ress = resources.stream()
+                .filter(r -> r.requester == null) // get only created resources
+                .filter(r -> r.name.equals(name))
+                .collect(Collectors.toList());
+        if (ress.isEmpty()){
+            // if no process has created this resource
+            Resource res = new Resource(name, null, requester);
+            resources.add(res);
+            synchronized (res){
+                try {
+                    synchronized (Kernel.CPU) {Kernel.CPU.notify();}
+                    res.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            return res;
+        } else {
+            // if there is process that created this resource;
+            if (ress.size() > 1){
+                // TODO maybe try use priority
+                System.out.println("more than 1 resource with same name, what to do?");
+                System.out.println(requester + name + ress.toString());
+            }
+            Resource res = ress.get(0);
+            res.requester = requester ;
+            // TODO add element info
+            return res;
+        }
+    }
 }
