@@ -37,26 +37,6 @@ public class Kernel {
         System.out.println("scheduler loop over");
     }
 
-    public static List<Process> getChildren (Process proc){
-        return processes.stream()
-                .filter(p -> p.parent == proc)
-                .collect(Collectors.toList());
-    }
-
-//    public static Resource getResByName (String name){
-//        List<Resource> ress = resources.stream()
-//                .filter(p -> p.name.equals(name))
-//                .collect(Collectors.toList());
-//        if (ress.size() > 1) {
-//            System.out.println("Found more then one res named: " + name);
-//        } else if (ress.size() == 0){ //
-//            System.out.println("There is no resource named: " + name);
-//            System.exit(1);
-//        }
-//        return ress.get(0);
-//    }
-
-
     // Manager methods responsible for managing resources.
     public static void createRes (Process creator, String name){
         List<Resource> ress = resources.stream()

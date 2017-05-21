@@ -1,6 +1,7 @@
 package mos;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 //Vykdomas procesas tampa:
     //Blokuotu, paprašius resurso kurio jis nesulaukia
@@ -20,11 +21,7 @@ enum ProcState{
     READY, ONGOING, BLOCKED, READY_STOPPED, BLOCKED_STOPPED
 }
 
-interface Program {
-    void run(Process proc) throws InterruptedException;
-}
-
-public class Process implements Runnable {
+public abstract class Process implements Runnable {
     //descriptor
     int id;         //ID - išorinis vardas
     String name;
@@ -43,40 +40,19 @@ public class Process implements Runnable {
         return priority;
     }
 
-    private Program program;
-
-    public Process(String name, Process parent, int priority, final Program program) {
-        //this.id = should be auto generated
+    public Process(String name, Process parent, int priority) {
         this.name = name;
         this.state = ProcState.READY;
         this.parent = parent;
-        if (0 <= priority && priority <= 10) { // TODO what should be range of priority
-            this.priority = priority;
-        } else {
-            this.priority = 0; // TODO error
-        }
 
-        this.program = program;
+        Kernel.processes.add(this);
+        Thread t1 = new Thread(this, name);
+        t1.start();
     }
 
     @Override
     public void run() {
-        try {
-            synchronized (this){
-                this.wait(); //Stops and waits for scheduler
-                program.run(this);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     };
-
-    public Process createProc (String name) {
-        Process child = SystemProcs.getProc(name, this);
-        Kernel.processes.add(child);
-        Thread t1 = new Thread(child, name);
-        t1.start();
-        return child;
         //Kurti procesą
             //Argumentai:
             //Tėvinis procesas DONE
@@ -87,12 +63,16 @@ public class Process implements Runnable {
             //Iš argumentų sukuriamas proceso deskriptorius DONE
             //Procesas pridedamas prie bendro procesų sąrašo DONE
             //Procesas pridedamas prie tėvinio proceso vaikų sąrašo NO NEED
-    }
+//    }
     public void terminate() throws InterruptedException {
-        List<Process> children = Kernel.getChildren(this);
-        for(Process child : children){
+        // Gets all the children of this process
+        List<Process> childrenProcs = Kernel.processes.stream()
+                .filter(p -> p.parent == this)
+                .collect(Collectors.toList());
+        for(Process child : childrenProcs){
             child.terminate();
         }
+        //TODO do same with resources
         System.out.println("terminating proc: " + this.name);
         Kernel.processes.remove(this);
         //Naikinti procesą
@@ -105,21 +85,9 @@ public class Process implements Runnable {
     public Resource getRes(String resName) throws InterruptedException {
         this.state = ProcState.BLOCKED;
         System.out.println(this.name + " requested resource: " + resName);
-//        if (resName.equals("Neegzistuojantis")) {
-//            synchronized (Kernel.CPU) {Kernel.CPU.notify();}
-//            System.out.println(this.name + " laukia \"Neegzistuojantis\" resurso");
-//            synchronized (this) {wait();}
-//            System.out.println("you should not be here");
-//            assert true;
-//        }
-//        Resource res = new Resource(resName, this);
-//        Kernel.resources.add(res);
-//        synchronized (res){
-//            System.out.println(this.name + " is waiting for " + resName);
-//            synchronized (Kernel.CPU) {Kernel.CPU.notify();}
-//            res.wait();
-//        }
+
         Resource res = Kernel.requestRes(this, resName);
+
         System.out.println(this.name + " got resource: " + resName);
         this.state = ProcState.READY;
         synchronized (this) {this.wait();}

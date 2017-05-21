@@ -1,75 +1,92 @@
 package mos;
 
-import java.util.Scanner;
+class RootProgram extends Process {
 
-public class SystemProcs {
-    static public Process getProc (String name, Process parent){
-        switch (name.toLowerCase()){
-            case "root":
-                return new Process(name, parent, 10, new RootProgram());
-            case "cli":
-                return new Process(name, parent, 9,  new CLIProgram());
-            case "readinput":
-                return new Process(name, parent, 8,  new ReadInputProgram());
-            default:
-                return new Process(name, parent, 0, new PlaceholderProgram());
-                // TODO add parsing for vm name.
+    public RootProgram(String name, Process parent, int priority) {
+        super(name, parent, priority);
+    }
 
+    @Override
+    public void run() {
+        synchronized (this) {
+            try {
+                this.wait(); //Stops and waits for scheduler
+                Process cli = new CLIProgram("CLI", this, 9);
+                //Process readInput = new ReadInputProgram("ReadInput", this, 8);
+
+                getRes("MOS pabaiga");
+
+                cli.terminate();
+                //readInput.terminate();
+
+                getRes("Neegzistuojantis");//root will be terminated by scheduler
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
-    };
-
-}
-
-class RootProgram implements Program {
-
-    @Override
-    public void run(Process proc) throws InterruptedException {
-        Process cli         = proc.createProc("CLI");
-        Process mainProc    = proc.createProc("MainProc");
-        Process readDisk    = proc.createProc("ReadDisk");
-        Process writeDisk   = proc.createProc("WriteDisk");
-        Process readInput   = proc.createProc("ReadInput");
-        Process writeOutput = proc.createProc("WriteOutput");
-
-        proc.getRes("MOS pabaiga");
-
-        cli.terminate();
-        mainProc.terminate();
-        readDisk.terminate();
-        writeDisk.terminate();
-        readInput.terminate();
-        writeOutput.terminate();
-
-        proc.getRes("Neegzistuojantis");//root will be terminated by scheduler
     }
 }
 
-class CLIProgram implements Program {
+class CLIProgram extends Process {
+
+    public CLIProgram(String name, Process parent, int priority) {
+        super(name, parent, priority);
+    }
 
     @Override
-    public void run(Process proc) throws InterruptedException {
-        proc.makeRes("input packet");
-    //        Scanner sc = new Scanner(System.in); //TODO move this to ReadInput
-    //        String name = sc.nextLine();
-    //        proc.createProc(name);
-        proc.makeRes("MOS pabaiga");
-        proc.getRes("Neegzistuojantis");
+    public void run() {
+        synchronized (this) {
+            try {
+                this.wait();
+                makeRes("input packet");
+                //        scanner sc = new scanner(system.in); //todo move this to readinput
+                //        string name = sc.nextline();
+                //        createproc(name);
+                makeRes("MOS pabaiga");
+                getRes("neegzistuojantis");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
 
-class ReadInputProgram implements Program {
+class ReadInputProgram extends Process {
+
+    public ReadInputProgram(String name, Process parent, int priority) {
+        super(name, parent, priority);
+    }
 
     @Override
-    public void run(Process proc) throws InterruptedException {
-        //TODO proc.getRes("input packet");
-        proc.getRes("Neegzistuojantis");
+    public void run() {
+        synchronized (this) {
+            try {
+                this.wait();
+                //TODO getRes("input packet");
+                getRes("Neegzistuojantis");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
-class PlaceholderProgram implements Program {
+
+class PlaceholderProgram extends Process {
+
+    public PlaceholderProgram(String name, Process parent, int priority) {
+        super(name, parent, priority);
+    }
 
     @Override
-    public void run(Process proc) throws InterruptedException {
-        System.out.println("This is placeholder program or you tried create process wrong name");
-        proc.getRes("Neegzistuojantis");
+    public void run() {
+        synchronized (this) {
+            try {
+                this.wait();
+                System.out.println("This is placeholder program or you tried create process wrong name");
+                getRes("Neegzistuojantis");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
